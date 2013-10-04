@@ -1,11 +1,14 @@
 package models;
 
-import java.util.List;
+import java.util.*;
 
 import org.junit.*;
 
+import com.avaje.ebean.Ebean;
+
 import static org.junit.Assert.*;
 import static play.test.Helpers.*;
+import play.libs.Yaml;
 import play.test.WithApplication;
 
 
@@ -17,8 +20,8 @@ public class ModelTest extends WithApplication {
 	}
 	@Test
 	public void createAndRetrieveUser(){
-		new Users ("bob@gmail.com" , "Bob","secret").save();
-		Users bob = Users.find.where().eq("email","bob@gmail.com").findUnique();
+		new User ("bob@gmail.com" , "Bob","secret").save();
+		User bob = User.find.where().eq("email","bob@gmail.com").findUnique();
 		assertNotNull(bob);
 		assertEquals("Bob",bob.name);
 	}
@@ -28,8 +31,8 @@ public class ModelTest extends WithApplication {
 
 	@Test
 	public void tryAuthenticateUser() {
-		new Users ("bob@gmail.com" ,"bob" , "secret").save();
-		assertNotNull(Users.authenticate("bob@gmail.com","secret"));
+		new User ("bob@gmail.com" ,"bob" , "secret").save();
+		assertNotNull(User.authenticate("bob@gmail.com","secret"));
 		assertNull("abi@gmail.com","abi");
 		assertNull("bob@gmail.com","secret");
 	
@@ -37,9 +40,9 @@ public class ModelTest extends WithApplication {
 	
 	@Test
 	public void findProjectInvolving(){
-		new Users ("bob@gmail.com","Bob" , "secrets").save();
-		new Users ("abi@gmail.com","abi","play").save();
-		new Users ("nelson@gmail.com" , "nelson" , "dribbler").save();
+		new User ("bob@gmail.com","Bob" , "secrets").save();
+		new User ("abi@gmail.com","abi","play").save();
+		new User ("nelson@gmail.com" , "nelson" , "dribbler").save();
 		
 		Project.create("Play 2", "play", "bob@gmail.com");
 		Project.create("Play 1", "play", "abi@gmial.com");
@@ -51,7 +54,7 @@ public class ModelTest extends WithApplication {
 	}	
       @Test
 	    public void findTodoTasksInvolving() {
-	        Users bob = new Users("bob@gmail.com", "Bob", "secret");
+	        User bob = new User("bob@gmail.com", "Bob", "secret");
 	        bob.save();
 
 	        Project project = Project.create("Play 2", "play", "bob@gmail.com");
@@ -70,6 +73,30 @@ public class ModelTest extends WithApplication {
 	        assertEquals(1, result.size());
 	        assertEquals("Release next version", result.get(0).title);
 	    }
+      
+      @Test
+      public void fullTest() {
+          Ebean.save((List) Yaml.load("initial-data.yml"));
+
+          // Count things
+          assertEquals(3, User.find.findRowCount());
+          assertEquals(7, Project.find.findRowCount());
+          assertEquals(5, Task.find.findRowCount());
+
+          // Try to authenticate as users
+          assertNotNull(User.authenticate("bob@example.com", "secret"));
+          assertNotNull(User.authenticate("jane@example.com", "secret"));
+          assertNull(User.authenticate("jeff@example.com", "badpassword"));
+          assertNull(User.authenticate("tom@example.com", "secret"));
+
+          // Find all Bob's projects
+          List<Project> bobsProjects = Project.findInvolving("bob@example.com");
+          assertEquals(5, bobsProjects.size());
+
+          // Find all Bob's todo tasks
+          List<Task> bobsTasks = Task.findTodoInvolving("bob@example.com");
+          assertEquals(4, bobsTasks.size());
+      }
 
 		
 				

@@ -16,7 +16,7 @@ public class Task extends Model {
 	public boolean done = false;
 	public Date dueDate;
 	@ManyToOne
-	public Users assignedTo;
+	public User assignedTo;
 	public String folder;
 	@ManyToOne
 	public Project project;
